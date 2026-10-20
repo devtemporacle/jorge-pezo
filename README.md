@@ -1,5 +1,9 @@
 # jorge-pezo
-My about-me page, built with Fredrin
+
+My about-me page, built with Fredrin.
+
+**Live site:** https://devtemporacle.github.io/jorge-pezo/
+
 
 ## Deploy
 
