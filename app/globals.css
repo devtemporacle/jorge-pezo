@@ -132,6 +132,10 @@ a {
   list-style: none;
 }
 
+.body-text + .tags {
+  margin-top: 20px;
+}
+
 .tag {
   font-family: var(--font-mono);
   font-size: 12px;
