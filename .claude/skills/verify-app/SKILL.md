@@ -86,18 +86,21 @@ JSON.stringify({
 
 ## Evidence
 
-Record the action → rendered state, plus screenshots at a desktop and a mobile
-width. `fredrin browser` cannot resize its viewport, so fixed-width captures use
-headless Edge/Chrome against the same served URL (a real browser render, not a
-mock):
+Record the action → rendered state, plus screenshots at a desktop (1280px) and a
+mobile (390px, device-emulated) width. `fredrin browser` cannot resize its
+viewport, and `chrome/msedge --headless --screenshot --window-size=390,…` clamps
+the window to a ~500px minimum (the capture comes out cropped, which looks like
+overflow but is not), so use the bundled `screenshot.mjs`: it drives an installed
+Chrome/Edge through puppeteer-core with real viewport emulation, prints
+`{vw, sw, h1, h1px}` per width (`sw > vw` means horizontal overflow) and writes
+full-page `desktop.png` / `mobile.png`. puppeteer-core is installed in a scratch
+folder, never in the site's `package.json`:
 
 ```bash
-BROWSER="/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"   # or chrome.exe / google-chrome
-"$BROWSER" --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=3000 \
-  --window-size=1280,900  --screenshot="$PWD/.fredrin/tmp/verify/desktop.png" http://localhost:4317/
-"$BROWSER" --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=3000 \
-  --window-size=390,1400  --screenshot="$PWD/.fredrin/tmp/verify/mobile.png"  http://localhost:4317/
-fredrin browser screenshot --out .fredrin/tmp/verify/live.png   # optional: the driven pane
+mkdir -p .fredrin/tmp/verify-shot && cp .claude/skills/verify-app/screenshot.mjs .fredrin/tmp/verify-shot/
+(cd .fredrin/tmp/verify-shot && [ -d node_modules/puppeteer-core ] || (npm init -y >/dev/null && npm i puppeteer-core@24.10.0 --silent))
+CHROME="C:/Program Files/Google/Chrome/Application/chrome.exe"   # or msedge.exe / /usr/bin/google-chrome
+node .fredrin/tmp/verify-shot/screenshot.mjs http://localhost:4317/ .fredrin/tmp/verify "$CHROME"
 ```
 
 Open each PNG and check: dark `#0a0a0f` background with the indigo/green glow,
@@ -111,9 +114,12 @@ Kill only the server this skill started; keep the screenshots.
 
 ```bash
 kill "$(cat .fredrin/tmp/verify/serve.pid)" 2>/dev/null
-# Windows/Git Bash: if the port is still held, find the node PID on that port only
-#   netstat -ano | grep ":4317" ; taskkill //PID <pid> //F
 rm -f .fredrin/tmp/verify/serve.pid
+# The saved PID is the npx wrapper; on Windows/Git Bash the node child keeps the
+# port. Kill only the process listening on THIS port:
+netstat -ano | grep ":4317 " | grep LISTEN      # last column is the PID
+taskkill //PID <that-pid> //F                   # (Linux/macOS: lsof -ti :4317 | xargs kill)
+fredrin browser close --headless 2>/dev/null    # if the headless page was used
 ```
 
 Never kill other `node` processes (dev servers, other tickets' servers).
