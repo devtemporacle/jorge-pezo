@@ -1,3 +1,7 @@
+// A plain <a> isn't base-path aware, so prefix public/ files the same way
+// next.config.ts does (e.g. "/jorge-pezo" on GitHub Pages, "" at the root).
+const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/+$/, "");
+
 export default function Contact() {
   return (
     <section id="contact" aria-labelledby="contact-heading">
@@ -21,6 +25,15 @@ export default function Contact() {
           rel="noopener noreferrer"
         >
           GitHub
+        </a>
+        <a
+          className="chip"
+          href={`${basePath}/Jorge-Pezo-CV.pdf`}
+          download
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Résumé
         </a>
       </div>
     </section>
