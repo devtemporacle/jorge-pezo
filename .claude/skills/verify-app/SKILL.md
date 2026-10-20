@@ -18,7 +18,7 @@ Run these before launching; each must exit 0. None of them changes tracked files
 
 ```bash
 node -v                       # Node 20.9+ (Next.js 16 requirement)
-npm ls next react react-dom   # deps installed; if it fails: npm ci
+npm ls next react react-dom   # deps installed
 npx tsc --noEmit              # typecheck
 npm run lint                  # eslint
 npm run build                 # static export -> out/ (needs network for next/font Google fonts)
@@ -27,27 +27,29 @@ test -f out/index.html        # export produced the page
 
 `npm run build` failing on a font fetch means the machine is offline — that is an
 environment problem, not a code one; say so instead of reporting a pass.
+Doctor only reports: if `npm ls` fails, the remedy is `npm ci`, run as a
+separate, deliberate step.
 
 ## Launch (from a clean state)
 
 1. Clean build: `rm -rf .next out && npm run build`.
-2. Serve the export on a free port and remember the PID so cleanup only kills
-   what this skill started:
+2. Serve the export on port 4317 and wait until it is usable — in ONE shell
+   call (shell variables do not survive between agent tool calls). The port must
+   be free first: if something already listens there (another worktree's server)
+   stop and pick another port rather than testing — or later killing — someone
+   else's server. Ready means usable, not just "port open": poll until the hero
+   H1 is in the served HTML.
 
    ```bash
    mkdir -p .fredrin/tmp/verify
-   PORT=4317
-   npx --yes serve@14.2.4 out -l $PORT > .fredrin/tmp/verify/serve.log 2>&1 &
-   echo $! > .fredrin/tmp/verify/serve.pid
-   ```
-
-3. Ready means usable — not just "port open". Poll until the hero H1 is in the HTML:
-
-   ```bash
-   for i in $(seq 1 30); do
-     curl -fs http://localhost:$PORT/ | grep -q "Full-stack engineer building with AI." && echo READY && break
-     sleep 1
-   done
+   if netstat -ano | grep -q ":4317 .*LISTEN"; then echo "PORT 4317 BUSY - pick another"; else
+     npx --yes serve@14.2.4 out -l 4317 > .fredrin/tmp/verify/serve.log 2>&1 &
+     echo $! > .fredrin/tmp/verify/serve.pid
+     for i in $(seq 1 30); do
+       curl -fs http://localhost:4317/ | grep -q "Full-stack engineer building with AI." && echo READY && break
+       sleep 1
+     done
+   fi
    ```
 
    No `READY` after 30s: read `serve.log`, report the failure, go to Cleanup.
@@ -116,7 +118,8 @@ Kill only the server this skill started; keep the screenshots.
 kill "$(cat .fredrin/tmp/verify/serve.pid)" 2>/dev/null
 rm -f .fredrin/tmp/verify/serve.pid
 # The saved PID is the npx wrapper; on Windows/Git Bash the node child keeps the
-# port. Kill only the process listening on THIS port:
+# port. Launch verified the port was free, so its listener is the server this
+# skill started — kill only that one:
 netstat -ano | grep ":4317 " | grep LISTEN      # last column is the PID
 taskkill //PID <that-pid> //F                   # (Linux/macOS: lsof -ti :4317 | xargs kill)
 fredrin browser close --headless 2>/dev/null    # if the headless page was used
