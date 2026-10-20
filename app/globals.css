@@ -48,11 +48,17 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-wrap: break-word;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 3px;
 }
 
 /* Fixed ambient glow behind all content. */
@@ -163,11 +169,23 @@ a {
 .card-meta {
   margin: 6px 0 0;
   font-size: 15px;
+  line-height: 1.55;
   color: var(--muted);
 }
 
+/* Tall enough for a comfortable tap target; margin offsets the extra height. */
 .card-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 4px 0 -10px;
+  font-size: 15px;
   color: var(--indigo);
+}
+
+.card-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .chips {
@@ -180,6 +198,7 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 44px;
   padding: 11px 18px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -188,10 +207,21 @@ a {
   font: inherit;
   font-size: 15px;
   cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.chip:hover {
+  border-color: #3a3a55;
+  background: #1a1a28;
 }
 
 .chip-primary {
   background: var(--indigo);
   border-color: var(--indigo);
   color: #fff;
+}
+
+.chip-primary:hover {
+  background: #5558e8;
+  border-color: #5558e8;
 }
